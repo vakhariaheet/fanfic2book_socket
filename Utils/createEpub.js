@@ -1,9 +1,12 @@
 const epubGen = require('epub-gen');
 const fs = require('fs');
-
-module.exports = async (bookInfo, book, socket, cloudinary) => {
+const { default: axios } = require('axios');
+module.exports = async (bookInfo, socket, cloudinary, site) => {
 	let fileBuffer;
-	new epubGen({
+	for (let i = 0; i < bookInfo.book.length; i++) {
+		delete bookInfo.book[i].url;
+	}
+	const data = await new epubGen({
 		title: bookInfo.title,
 		author: bookInfo.author,
 		publisher: 'FanFiction.net',
@@ -12,29 +15,36 @@ module.exports = async (bookInfo, book, socket, cloudinary) => {
 		updated: bookInfo.updated,
 		rights: 'FanFiction.net',
 		cover: bookInfo.cover,
-		src: `https://www.fanfiction.net/${bookInfo.bookid}`,
+		src: bookInfo.url,
 		output: `${__dirname}/../assets/files/${bookInfo.uid}.epub`,
 		content: [
 			{
 				title: 'Book Info',
-				data: `<h3>${bookInfo.title || 'UNKNOWN'} by ${
-					bookInfo.author || 'UNKNOWN'
-				} </h3>
-                <h4>Type : ${bookInfo.type || 'UNKNOWN'}</h4>
-                <h4>Genre : ${bookInfo.genre || 'UNKNOWN'}</h4>
-                <h4>Language : ${bookInfo.language || 'UNKNOWN'}</h4>
-                <h4>Words : ${bookInfo.words || 'UNKNOWN'}</h4>
-                <h4>Published : ${bookInfo.published || 'UNKNOWN'}</h4>
-                <h4>Last Updated : ${bookInfo.updated || 'UNKNOWN'}</h4>
-				<h4>Status : ${bookInfo.status || 'UNKNOWN'}</h4>
-				<h4>Summary : ${bookInfo.description || 'UNKNOWN'}</h4>
-				<h4>Rating : ${bookInfo.rated || 'UNKNOWN'}</h4>
-                <h4>Src : <a href = 'https://m.fanfiction.net/s/${
-									bookInfo.id
-								}'>https://m.fanfiction.net/s/${bookInfo.id}</a></h4>
+				data: `<h3><a href='${bookInfo.url}'>${
+					bookInfo.title
+				} </a> by <a href='${bookInfo.authorUrl || ''}'>${
+					bookInfo.author
+				}</a> </h3>
+                ${bookInfo.fandom ? `<h4>Fandom : ${bookInfo.fandom}</h4>` : ''}
+                ${
+									bookInfo.language
+										? `<h4>Language : ${bookInfo.language}</h4>`
+										: ''
+								}
+                ${bookInfo.words ? `<h4>Words : ${bookInfo.words}</h4>` : ''}
+				${bookInfo.published ? `<h4>Published : ${bookInfo.published}</h4>` : ''}
+                ${
+									bookInfo.chapters
+										? `<h4>Chapters : ${bookInfo.chapters}</h4>`
+										: ''
+								}
+				${bookInfo.updated ? `<h4>Updated : ${bookInfo.updated}</h4>` : ''}
+				${bookInfo.status ? `<h4>Status : ${bookInfo.status}</h4>` : ''}
+				${bookInfo.description ? `<h4>Summary : ${bookInfo.description}</h4>` : ''}
+				${bookInfo.rating ? `<h4>Rating : ${bookInfo.rating}</h4>` : ''}
                 `,
 			},
-			...book,
+			...bookInfo.book,
 		],
 	}).promise.then(
 		async (e) => {
@@ -52,22 +62,34 @@ module.exports = async (bookInfo, book, socket, cloudinary) => {
 						format: 'epub',
 					},
 				);
-				console.log(uploadResult);
-				socket.emit('success', {
-					bookURL: uploadResult.url,
-					...bookInfo,
-					extension: 'epub',
+
+				const { data: buffer } = await axios({
+					method: 'get',
+					url: uploadResult.url,
+					responseType: 'arraybuffer',
 				});
+
+				cloudinary.uploader.destroy(
+					`temp/${bookInfo.uid}.epub`,
+					{ resource_type: 'raw' },
+					function (error, result) {
+						if (error) return error;
+						socket.emit('log', {
+							message: result,
+						});
+					},
+				);
 				fs.rm(`${__dirname}/../assets/files/${bookInfo.uid}.epub`, (err) => {
 					if (err) {
 						return console.log(err);
 					}
 				});
-				return uploadResult.url;
+				return buffer;
 			} catch (err) {
 				console.log(err);
 			}
 		},
 		(err) => console.error('Failed to generate Ebook because of ', err),
 	);
+	return data;
 };

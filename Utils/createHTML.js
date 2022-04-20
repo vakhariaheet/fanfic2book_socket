@@ -1,10 +1,9 @@
 const fs = require('fs');
 const bookToHTML = require('./bookToHTML');
+const Blob = require('node-blob');
+module.exports = async (bookInfoData, src) => {
+	const html = await bookToHTML(bookInfoData, src);
+	const blob = new Blob([html], { type: 'text/html' });
 
-module.exports = async (bookInfoData, book, socket) => {
-	return socket.emit('success', {
-		html: await bookToHTML({ ...bookInfoData, book }),
-		...bookInfoData,
-		extension: 'html',
-	});
+	return blob.buffer;
 };

@@ -16,25 +16,17 @@ module.exports = async (bookData, book, cloudinary) => {
 			.join(',') +
 		`]}`;
 	await fs.writeFileSync(`${bookData.uid}.js`, file);
-	const buffer = await fs.readFileSync(`${bookData.uid}.js`);
-	cloudinary.uploader
-		.upload_stream(
-			{
-				resource_type: 'raw',
-				folder: 'bookData',
-				format: 'js',
-				public_id: `${bookData.uid}.js`,
-			},
-			(err, result) => {
-				if (err) {
-					return console.log(err);
-				}
-				fs.rm(`${bookData.uid}.js`, (err) => {
-					if (err) {
-						return console.log(err);
-					}
-				});
-			},
-		)
-		.end(buffer);
+
+	const url = await cloudinary.uploader.upload(`${bookData.uid}.js`, {
+		resource_type: 'raw',
+		folder: 'bookData',
+		format: 'js',
+		public_id: `${bookData.uid}.js`,
+	});
+	fs.rm(`${bookData.uid}.js`, (err) => {
+		if (err) {
+			return console.log(err);
+		}
+	});
+	return url.url;
 };
