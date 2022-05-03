@@ -1,8 +1,10 @@
-const moment = require('moment');
-module.exports = async (bookData) => {
+import { Book } from '../interfaces';
+
+const { getDate } = require('./getDate');
+export default async (book: Book) => {
 	return `<html>
 	<head>
-		<title>${bookData.title} by ${bookData.author}</title>
+		<title>${book.title} by ${book.author}</title>
 		<style>
 			*,
 			::after,
@@ -165,51 +167,49 @@ module.exports = async (bookData) => {
 	</head>
 	<body>
 		<h1>
-			<a href="${bookData.url}" target="_blank">${bookData.title}</a> by
-			<a href="${bookData.authorUrl}" target="_blank">${bookData.author}</a>
+			<a href="${book.url}" target="_blank">${book.title}</a> by
+			<a href="${book.authorUrl}" target="_blank">${book.author}</a>
 		</h1>
 		<div class="chapters">
 			<button class="btn">Chapters</button>
 			<div class="chapterList"></div>
 		</div>
-		${bookData.fandom ? `<h4>Fandom : ${bookData.fandom}</h4>` : ''} 
-		${bookData.language ? `<h4>Language : ${bookData.language}</h4>` : ''} 
-		${bookData.words ? `<h4>Words : ${bookData.words}</h4>` : ''} 
+		${book.fandom ? `<h4>Fandom : ${book.fandom}</h4>` : ''} 
+		${book.language ? `<h4>Language : ${book.language}</h4>` : ''} 
+		${book.words ? `<h4>Words : ${book.words}</h4>` : ''} 
 		${
-			bookData.published
-				? `<h4>Published : ${moment(bookData.published).format(
-						'Do MMM YYYY',
-				  )}</h4>`
+			book.published
+				? `<h4>Published : ${getDate(book.published, 'Do MMM YYYY')}</h4>`
 				: ''
 		}
 		 ${
-				bookData.updated
+				book.updated
 					? `
-		<h4>Updated : ${moment(bookData.updated).format('Do MMM YYYY')}</h4>
+		<h4>Updated : ${getDate(book.updated, 'Do MMM YYYY')}</h4>
 		`
 					: ''
 			} ${
-		bookData.status
+		book.status
 			? `
-		<h4>Status : ${bookData.status}</h4>
+		<h4>Status : ${book.status}</h4>
 		`
 			: ''
 	} ${
-		bookData.description
+		book.description
 			? `
-		<h4>Summary : ${bookData.description}</h4>
+		<h4>Summary : ${book.description}</h4>
 		`
 			: ''
 	} ${
-		bookData.rating
+		book.rating
 			? `
-		<h4>Rating : ${bookData.rating}</h4>
+		<h4>Rating : ${book.rating}</h4>
 		`
 			: ''
 	} ${
-		bookData.chapters
+		book.chapters
 			? `
-		<h4>Chapters : ${bookData.chapters}</h4>
+		<h4>Chapters : ${book.chapters}</h4>
 		`
 			: ''
 	}
@@ -229,7 +229,7 @@ module.exports = async (bookData) => {
 		</div>
 		<script>
 			const data=${JSON.stringify(
-				bookData,
+				book,
 			)},rootEle=document.querySelector("#root"),btnNext=document.querySelector(".btn--next"),btnPrevios=document.querySelector(".btn--previous"),h2=document.querySelector(".content"),chapters=document.querySelector(".chapters"),chapterList=document.querySelector(".chapterList"),btn=document.querySelector(".btn");let nextRoute=data.chapter===1?null:"#2",previousRoute=null;1===data.book.length&&(nextRoute=null),btn.addEventListener("click",()=>{chapterList.classList.toggle("hide")});const onNavigate=e=>{history.pushState({},e,window.location.pathname+e),rootEle.innerHTML=routes[e],nextRoute=Number(e.replace("#",""))+1>Number(data.chapters)?null:"#"+(Number(e.replace("#",""))+1),btnNext.disabled=null===nextRoute,previousRoute=Number(e.replace("#",""))-1<=0?null:"#"+(Number(e.replace("#",""))-1),btnPrevios.disabled=null===previousRoute,chapterList.classList.add("hide"),window.scroll(0,0)},routes={};data.book.forEach((e,t)=>{routes["#"+(t+1)]="<h2>"+e.title+'</h2> <div class="content">'+e.data+"</div>"}),onNavigate("#1"),chapterList.innerHTML=data.book.map((e,t)=>'<a class="link">'+e.title+"</a>").join("");const links=document.querySelectorAll(".link");console.log(links),links.forEach((e,t)=>{e.addEventListener("click",()=>{onNavigate("#"+(t+1))})}),window.onpopstate=(()=>{console.log(window.location.pathname),rootEle.innerHTML=routes[window.location.hash]}),btnNext.addEventListener("click",()=>{onNavigate(nextRoute)}),btnPrevios.addEventListener("click",()=>{onNavigate(previousRoute)});
 		</script>
 	</body>

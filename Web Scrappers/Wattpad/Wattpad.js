@@ -12,12 +12,38 @@ const sendDataToCloud = require('../../Utils/sendDataToCloud');
 const SendEmail = require('../../Utils/SendEmail');
 const { default: axios } = require('axios');
 const random_ua = require('random-ua');
-const Wattpad = async (extension, id, socket, cloudinary, db, forceUpdate) => {
+const Wattpad = async (
+	extension,
+	id,
+	socket,
+	cloudinary,
+	db,
+	forceUpdate,
+	user,
+) => {
 	let book = {};
+	let isBookUpdated = false;
+	const browser = await puppeteer.launch();
+	const incognitoContext = await browser.createIncognitoBrowserContext();
+	const page = await incognitoContext.newPage();
+	await page.setUserAgent(random_ua.generate());
+	await page.goto(`https://wattpad.com/story/${id}`);
+	const is404 = await page.$('#story-404-wrapper');
+	if (is404) {
+		socket.emit('error', {
+			message: 'Story not found',
+		});
+		await browser.close();
+		return;
+	}
+	const storyLastUpdated = await page
+		.$eval('.table-of-contents__last-updated strong', (ele) => ele.textContent)
+		.then((data) => getDate(data));
 
 	const [result] = await db.query(
 		` SELECT * FROM all_books WHERE id ='W-${id}'`,
 	);
+
 	if (result.length > 0 && !forceUpdate) {
 		socket.emit('log', {
 			message: 'Book found in database',
@@ -27,21 +53,35 @@ const Wattpad = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 			method: 'GET',
 			url: result[0].info,
 		});
-		book = eval(resp.data);
-		const info = { ...book, extension, book: [] };
+		const info = { ...resp.data, extension };
+		book = { ...resp.data, extension };
+
 		socket.emit('bookinfo', info);
 		socket.emit('log', {
 			message: `Fetching ${id}`,
 		});
-	} else {
+		if (moment(info.updated).isSame(storyLastUpdated)) {
+			socket.emit('log', {
+				message: `Book is up to date`,
+			});
+		} else {
+			socket.emit('log', {
+				message: `Book is not up to date`,
+			});
+			socket.emit('log', {
+				message: `Refreshing book`,
+			});
+			isBookUpdated = true;
+		}
+	}
+	if (result.length === 0 || forceUpdate || isBookUpdated) {
 		const bookInfo = {};
 		let chapters = [];
 		let error = true;
 		let errorCount = 0;
+		let errorMessage = '';
 		//- 1. Lauching browser
 		let chaptersInfo;
-		const browser = await puppeteer.launch();
-		const incognitoContext = await browser.createIncognitoBrowserContext();
 
 		const fetchBookInfo = async () => {
 			const page = await incognitoContext.newPage({
@@ -51,7 +91,14 @@ const Wattpad = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 			//- 2. Navigating to Wattpad
 			await page.goto(`https://www.wattpad.com/story/${id}`);
 			await page.waitForSelector('.story-parts a');
-
+			const isStoryPaid = await page.$('.paid-indicator');
+			if (isStoryPaid) {
+				socket.emit('error', {
+					message: 'This story is paid',
+					type: 'single',
+				});
+				return;
+			}
 			//- 3. Getting the book info
 			chaptersInfo = await page.$$eval('.story-parts a', (ele) => {
 				return ele.map((el) => [el.href, el.innerText]);
@@ -115,6 +162,7 @@ const Wattpad = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 				socket.emit('log', {
 					message: `Retrying...`,
 				});
+				console.log(error);
 				errorCount++;
 			}
 		}
@@ -122,6 +170,17 @@ const Wattpad = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 			socket.emit('error', {
 				message: `Failed to fetch book info`,
 			});
+			if (user) {
+				SendEmail(user.email, 'Failed to fetch book info', {
+					err: {
+						message: JSON.stringify(errorMessage),
+						time: moment().format('MMMM Do YYYY, h:mm:ss a'),
+						site: 'Wattpad',
+					},
+					user,
+					book: `${book.title} by ${book.author}`,
+				});
+			}
 			return {
 				error: true,
 			};

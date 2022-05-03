@@ -1,10 +1,12 @@
-const { createCanvas, registerFont, loadImage } = require('canvas');
-const data = require('../assets/bookCover.json');
-module.exports = async (bookInfo, cloudinary) => {
+import { createCanvas, registerFont, loadImage } from 'canvas';
+import data from '../assets/bookCover.json';
+import { BookInfo } from '../interfaces';
+
+module.exports = async (bookInfo: BookInfo, cloudinary: any) => {
 	const canvas = createCanvas(512, 800);
 	const ctx = canvas.getContext('2d');
 	const wordsArray = bookInfo.title.split(' ');
-	let words = [];
+	let words: string[] = [];
 	const wordLen = wordsArray.length;
 	for (let i = 0; i < wordLen; i++) {
 		words.push(wordsArray.splice(0, 3).join(' '));
@@ -51,9 +53,14 @@ module.exports = async (bookInfo, cloudinary) => {
 		260,
 	);
 	const datauri = canvas.toDataURL();
-	const uploadResult = await cloudinary.uploader.upload(datauri, {
-		folder: 'covers',
-		public_id: bookInfo.uid,
-	});
-	return uploadResult.url;
+	let uploadResult;
+	try {
+		uploadResult = await cloudinary.uploader.upload(datauri, {
+			public_id: `bookCover/${bookInfo.id}`,
+			overwrite: true,
+		});
+		return uploadResult.url;
+	} catch (err) {
+		console.log(err);
+	}
 };

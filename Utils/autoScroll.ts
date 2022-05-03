@@ -1,4 +1,5 @@
-module.exports = async (page) => {
+import { Page } from 'puppeteer';
+module.exports = async (page: Page) => {
 	await page.evaluate(async () => {
 		await new Promise((resolve, reject) => {
 			var totalHeight = 0;
@@ -10,7 +11,7 @@ module.exports = async (page) => {
 
 				if (totalHeight >= scrollHeight - window.innerHeight) {
 					clearInterval(timer);
-					resolve();
+					resolve('done');
 				}
 			}, 100);
 		});

@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer-extra');
 // add stealth plugin and use defaults (all evasion techniques)
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
-const AO3Series = async (id) => {
+const AO3Series = async (id: string) => {
 	const browser = await puppeteer.launch();
 	const page = await browser.newPage();
 

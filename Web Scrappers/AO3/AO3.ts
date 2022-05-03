@@ -1,5 +1,7 @@
+import Pool from 'mysql2/typings/mysql/lib/Pool';
+import { Socket } from 'socket.io';
+import { BookInfo } from '../../interfaces';
 const puppeteer = require('puppeteer-extra');
-const moment = require('moment');
 // add stealth plugin and use defaults (all evasion techniques)
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const createBookCover = require('../../Utils/createBookCover');
@@ -7,11 +9,17 @@ const sendDataToCloud = require('../../Utils/sendDataToCloud');
 const createEpub = require('../../Utils/createEpub');
 const createHTML = require('../../Utils/createHTML');
 const { default: axios } = require('axios');
-
+const { getDate } = require('../../Utils/getDate');
 puppeteer.use(StealthPlugin());
 
-const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
-	console.log(id);
+const AO3 = async (
+	extension: string,
+	id: string,
+	socket: Socket,
+	cloudinary: any,
+	db: Pool,
+	forceUpdate: Boolean,
+) => {
 	let book = {};
 	socket.emit('log', {
 		message: 'Checking if the book is already in the database',
@@ -19,7 +27,7 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 	});
 
 	//- 1. Check if book is in database
-	const [result] = await db.query(
+	const [result]: any = await db.query(
 		` SELECT * FROM all_books WHERE id ='A-${id}'`,
 	);
 
@@ -33,8 +41,9 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 			method: 'GET',
 			url: result[0].info,
 		});
-		book = eval(resp.data);
-		const info = { ...book, extension, book: [] };
+
+		const info = { ...resp.data, extension };
+		book = { ...resp.data, extension };
 		socket.emit('bookinfo', info);
 		socket.emit('log', {
 			message: `Fetching ${id}`,
@@ -42,8 +51,30 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 	} else {
 		//- 2. Else Lauching browser and navigating to FanFiction.net Story
 		const browser = await puppeteer.launch();
-		const chapters = [];
-		const bookInfo = {};
+		const chapters: {
+			title: string;
+			content: string;
+			url: string;
+		}[] = [];
+		const bookInfo: BookInfo = {
+			title: '',
+			author: '',
+			authorUrl: '',
+			chapterLength: 1,
+			cover: '',
+			description: '',
+			genre: '',
+			fandom: '',
+			language: '',
+			rating: '',
+			status: '',
+			url: '',
+			words: 0,
+			published: '',
+			id: '',
+			uid: '',
+			updated: '',
+		};
 		let error = true;
 		let errorCount = 0;
 		const page = await browser.newPage();
@@ -57,54 +88,51 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 				`https://archiveofourown.org/works/${id}?view_adult=true&view_full_work=true`,
 			);
 
-			bookInfo.title = await page.$eval('h2.title', (ele) =>
+			bookInfo.title = await page.$eval('h2.title', (ele: any) =>
 				ele.textContent.trim(),
 			);
 			[bookInfo.author, bookInfo.authorUrl] = await page.$eval(
 				"a[rel='author']",
-				(ele) => [ele.textContent, ele.href],
+				(ele: any) => [ele.textContent, ele.href],
 			);
 			bookInfo.url = `https://archiveofourown.org/works/${id}`;
 			socket.emit('log', {
 				message: `Fetching book info for ${bookInfo.title} by ${bookInfo.author}`,
 			});
-			bookInfo.rating = await page.$eval('dd.rating', (ele) =>
+			bookInfo.rating = await page.$eval('dd.rating', (ele: any) =>
 				ele.textContent.trim(),
 			);
-			bookInfo.fandom = await page.$eval('dd.fandom', (ele) =>
+			bookInfo.fandom = await page.$eval('dd.fandom', (ele: any) =>
 				ele.textContent.trim(),
 			);
-			bookInfo.language = await page.$eval('dd.language', (ele) =>
+			bookInfo.language = await page.$eval('dd.language', (ele: any) =>
 				ele.textContent.trim(),
 			);
 			bookInfo.published = await page
-				.$eval('dd.published', (ele) => ele.textContent)
-				.then((ele) => {
-					console.log(`"${ele}"`);
-					return moment(ele, 'YYYY-MM-DD').format('YYYY-MM-DD');
-				});
+				.$eval('dd.published', (ele: any) => ele.textContent)
+				.then((date: any) => getDate(date));
 			const status = await page.$('dd.status');
 			bookInfo.updated = status
 				? await page
-						.$eval('dd.status', (ele) => (ele ? ele.innerText.trim() : ' - '))
-						.then((ele) => {
-							return ele !== ' - '
-								? moment(ele, 'YYYY-MM-DD').format('YYYY-MM-DD')
-								: ele;
+						.$eval('dd.status', (ele: any) =>
+							ele ? ele.innerText.trim() : ' - ',
+						)
+						.then((date: string) => {
+							return date !== ' - ' ? getDate(date) : date;
 						})
 				: ' - ';
 			bookInfo.description = await page.$eval(
 				'.summary.module p',
-				(ele) => ele.textContent,
+				(ele: any) => ele.textContent,
 			);
-			bookInfo.words = await page.$eval('dd.words', (ele) =>
+			bookInfo.words = await page.$eval('dd.words', (ele: any) =>
 				Number(ele.textContent),
 			);
 			bookInfo.id = `${id}`;
 			bookInfo.uid = `A-${id}`;
-			[bookInfo.chapters, bookInfo.status] = await page.$eval(
+			[bookInfo.chapterLength, bookInfo.status] = await page.$eval(
 				'dd.chapters',
-				(ele) => {
+				(ele: any) => {
 					const chapterText = ele.textContent;
 					const chapterArr = chapterText.split('/');
 					if (chapterArr[1] === '?') {
@@ -114,7 +142,7 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 				},
 			);
 		};
-		console.log(bookInfo);
+
 		while (error && errorCount < 3) {
 			try {
 				await fetchBookInfo();
@@ -154,8 +182,8 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 		});
 		const chapterTitles = await page.$$eval(
 			'div.chapter.preface.group h3.title',
-			(eles) => {
-				return eles.map((ele, index) => {
+			(eles: any) => {
+				return eles.map((ele: any, index: number) => {
 					if (!ele) return `Chapter ${index + 1}`;
 					const chapterHead = ele.textContent.trim().split(':')[1];
 					if (!chapterHead) return `Chapter ${index + 1}`;
@@ -166,11 +194,19 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 
 		const fetchChapters = async () => {
 			for (let i = 1; i < chapterTitles.length; i++) {
-				const chapter = {};
+				const chapter: {
+					title: string;
+					content: string;
+					url: string;
+				} = {
+					title: '',
+					content: '',
+					url: '',
+				};
 				chapter.title = chapterTitles[i - 1];
-				chapter.data = await page.$eval(
+				chapter.content = await page.$eval(
 					`#chapter-${i} [role="article"].userstuff`,
-					(ele) => {
+					(ele: any) => {
 						ele.removeChild(ele.firstElementChild);
 						return ele.innerHTML;
 					},
@@ -187,7 +223,7 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 				error = true;
 				console.log(e);
 				socket.emit('log', {
-					message: `Error fetching chapter ${i}`,
+					message: `Error fetching chapter`,
 				});
 				socket.emit('log', {
 					message: `Retrying...`,
@@ -206,7 +242,7 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 		socket.emit('log', {
 			message: `Saving Book to Database`,
 		});
-		const dataUrl = await sendDataToCloud(bookInfo, chapters, cloudinary);
+		await sendDataToCloud(bookInfo, chapters, cloudinary);
 		if (forceUpdate) {
 			await db.query(`
 			UPDATE fanfic2book.all_books
@@ -216,7 +252,7 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 		} else {
 			await db.query(`INSERT INTO fanfic2book.all_books
 			(updated, info, id)
-			VALUES(CURRENT_TIMESTAMP, '${dataUrl}', 'A-${id}');`);
+			VALUES(CURRENT_TIMESTAMP, 'https://res.cloudinary.com/fanfic2book/raw/upload/bookData/A-${bookInfo.id}.txt', 'A-${id}');`);
 		}
 		book = { ...bookInfo, book: chapters };
 	}
@@ -233,4 +269,4 @@ const AO3 = async (extension, id, socket, cloudinary, db, forceUpdate) => {
 	}
 };
 
-module.exports = AO3;
+export default AO3;

@@ -13,32 +13,24 @@
 	"license": "ISC",
 	"dependencies": {
 		"@sendgrid/mail": "^7.6.2",
-		"apify": "^2.3.0",
 		"axios": "^0.26.1",
 		"canvas": "^2.9.0",
-		"cloudflare-scraper": "^1.0.8",
 		"cloudinary": "^1.28.1",
-		"cors": "^2.8.5",
 		"dotenv": "^16.0.0",
-		"electron": "^17.1.2",
 		"epub-gen": "^0.1.0",
-		"express": "^4.17.3",
-		"html-pdf": "^3.0.1",
-		"html2pdf.js": "^0.10.1",
+		"epub-gen-memory": "^1.0.9",
 		"http": "^0.0.1-security",
-		"jspdf": "^2.5.1",
-		"modern-random-ua": "^1.0.3",
+		"jszip": "^3.9.1",
 		"moment": "^2.29.2",
 		"mysql": "^2.18.1",
 		"mysql2": "^2.3.3",
-		"nightmare": "^3.0.2",
 		"node-blob": "^0.0.2",
-		"nodemon": "^2.0.15",
 		"puppeteer": "^13.5.2",
 		"puppeteer-extra": "^3.2.3",
 		"puppeteer-extra-plugin-stealth": "^2.9.0",
-		"random-ua": "^0.0.6",
-		"socket.io": "^4.4.1",
-		"vm": "^0.1.0"
+		"socket.io": "^4.4.1"
+	},
+	"devDependencies": {
+		"nodemon": "^2.0.15"
 	}
 }

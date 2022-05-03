@@ -4,6 +4,7 @@ const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 module.exports = async (userid) => {
+	console.log(`Scraping FanFiction.net for user ${userid}`);
 	const browser = await puppeteer.launch();
 
 	let error = true;
@@ -16,6 +17,8 @@ module.exports = async (userid) => {
 		const userLinks = await page.$$eval('.mystories .stitle', (ele) => {
 			return ele.map((el) => [el.href.split('/')[4], el.textContent]);
 		});
+		await page.close();
+		await browser.close();
 		return userLinks;
 	};
 	while (error && errorCount < 3) {
@@ -33,5 +36,6 @@ module.exports = async (userid) => {
 			break;
 		}
 	}
+
 	return userLinks;
 };

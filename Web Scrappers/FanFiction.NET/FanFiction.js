@@ -7,9 +7,8 @@ puppeteer.use(StealthPlugin());
 const createBookCover = require('../../Utils/createBookCover');
 const createEpub = require('../../Utils/createEpub');
 const createHTML = require('../../Utils/createHTML');
+const { getDate } = require('../../Utils/getDate');
 const sendDataToCloud = require('../../Utils/sendDataToCloud');
-
-var random_ua = require('random-ua');
 module.exports = async (
 	bookid,
 	extension,
@@ -40,8 +39,8 @@ module.exports = async (
 			method: 'GET',
 			url: result[0].info,
 		});
-		book = eval(resp.data);
-		const info = { ...book, extension, book: [] };
+		const info = { ...resp.data, extension };
+		book = { ...resp.data, extension };
 		socket.emit('bookinfo', info);
 	} else {
 		if (!forceUpdate) {
@@ -51,7 +50,7 @@ module.exports = async (
 			});
 		}
 		socket.emit('log', {
-			message: 'Featching book',
+			message: 'Fetching book',
 		});
 		let error = true;
 		let errorCount = 0;
@@ -114,16 +113,20 @@ module.exports = async (
 						.trim();
 				}
 				if (val.includes('Updated')) {
-					bookInfo.updated = val
-						.split('Updated: ')
-						.filter((v) => v.trim() && v)[0]
-						.trim();
+					bookInfo.updated = getDate(
+						val
+							.split('Updated: ')
+							.filter((v) => v.trim() && v)[0]
+							.trim(),
+					);
 				}
 				if (val.includes('Published')) {
-					bookInfo.published = val
-						.split('Published: ')
-						.filter((v) => v.trim() && v)[0]
-						.trim();
+					bookInfo.published = getDate(
+						val
+							.split('Published: ')
+							.filter((v) => v.trim() && v)[0]
+							.trim(),
+					);
 				}
 				if (val.includes('Status')) {
 					bookInfo.status = val
@@ -248,10 +251,22 @@ module.exports = async (
 
 	//- Creating file and sending buffer to the frontend
 	if (extension === 'epub') {
+		socket.emit('log', {
+			message: `Creating epub file`,
+		});
 		const buffer = await createEpub(book, socket, cloudinary);
+		socket.emit('log', {
+			message: `Book File Created`,
+		});
 		return { bookInfo: book, buffer };
 	} else if (extension === 'html') {
-		const buffer = await createHTML(book);
-		return { bookInfo: book, buffer };
+		socket.emit('log', {
+			message: `Creating epub file`,
+		});
+		const { buffer, size } = await createHTML(book);
+		socket.emit('log', {
+			message: `Book File Created`,
+		});
+		return { bookInfo: book, buffer, size };
 	}
 };
