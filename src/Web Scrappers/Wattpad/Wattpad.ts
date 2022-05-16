@@ -44,7 +44,9 @@ const Wattpad = async ({
 	let errorCount = 0;
 	let errorMessage = '';
 	const checkBook = async () => {
-		await page.goto(`https://wattpad.com/story/${bookid}`);
+		await page.goto(`https://wattpad.com/story/${bookid}`, {
+			waitUntil: 'domcontentloaded',
+		});
 		const is404 = await page.$('#story-404-wrapper');
 		if (is404) {
 			socket.emit('error', {
@@ -270,6 +272,7 @@ const Wattpad = async ({
 
 				//* 4.2. Navigating to chapter
 				await newPage.goto(chapter[0]);
+
 				await newPage.waitForSelector(`[data-page-number="1"]`);
 
 				//* 4.3. Scrolling to the bottom

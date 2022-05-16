@@ -20,7 +20,9 @@ const createBookCover = async (bookInfo: BookInfo) => {
 
 	ctx.drawImage(img, 0, 0);
 	ctx.textAlign = 'center';
-	registerFont('./assets/fonts/Merienda-Regular.ttf', { family: 'Merienda' });
+	registerFont('./src/assets/fonts/Merienda-Regular.ttf', {
+		family: 'Merienda',
+	});
 	ctx.globalCompositeOperation = 'destination-out';
 	ctx.font = '30px Merienda';
 
