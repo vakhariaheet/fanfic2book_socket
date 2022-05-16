@@ -29,7 +29,8 @@
 		"puppeteer-extra": "^3.2.3",
 		"puppeteer-extra-plugin-stealth": "^2.9.0",
 		"socket.io": "^4.4.1",
-		"ts-node": "^10.7.0"
+		"ts-node": "^10.7.0",
+		"typescript": "^4.6.4"
 	},
 	"devDependencies": {
 		"@types/crypto-js": "^4.1.1",
