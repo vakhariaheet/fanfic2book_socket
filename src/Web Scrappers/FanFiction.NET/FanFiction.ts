@@ -39,7 +39,10 @@ export default async ({
 		message: 'Checking if the book is already in the database',
 		type: 'single',
 	});
-	const browser = await puppeteer.launch({ headless: false });
+	const browser = await puppeteer.launch({
+		headless: false,
+		args: ['--no-sandbox', '--disable-setuid-sandbox'],
+	});
 	const incognitoContext = await browser.createIncognitoBrowserContext();
 	const page = await incognitoContext.newPage();
 	let storyLastUpdated: string = '';

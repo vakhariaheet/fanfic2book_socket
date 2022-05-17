@@ -9,7 +9,10 @@ import { SendEmail, templates } from '../../Utils/SendEmail';
 puppeteer.use(StealthPlugin());
 export default async (userid: string, socket: Socket, user: User) => {
 	console.log(`Scraping FanFiction.net for user ${userid}`);
-	const browser = await puppeteer.launch();
+	const browser = await puppeteer.launch({
+		headless: true,
+		args: ['--no-sandbox', '--disable-setuid-sandbox'],
+	});
 
 	let error = true;
 	let errorCount = 0;

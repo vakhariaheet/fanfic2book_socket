@@ -62,7 +62,10 @@ const AO3 = async ({
 		});
 	} else {
 		//- 2. Else Lauching browser and navigating to FanFiction.net Story
-		const browser = await puppeteer.launch();
+		const browser = await puppeteer.launch({
+			headless: true,
+			args: ['--no-sandbox', '--disable-setuid-sandbox'],
+		});
 		const chapters: {
 			title: string;
 			content: string;

@@ -5,7 +5,10 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 puppeteer.use(StealthPlugin());
 
 const AO3User = async (id: string) => {
-	const browser = await puppeteer.launch();
+	const browser = await puppeteer.launch({
+		headless: true,
+		args: ['--no-sandbox', '--disable-setuid-sandbox'],
+	});
 	const page = await browser.newPage();
 	let error = true;
 	let errorCount = 0;

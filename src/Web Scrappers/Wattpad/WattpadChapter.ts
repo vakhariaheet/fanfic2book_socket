@@ -8,7 +8,10 @@ export default async (id: string, socket: Socket): Promise<string> => {
 	socket.emit('log', {
 		message: 'Scrapping Wattpad Book ID from chapter ID',
 	});
-	const browser = await puppeteer.launch();
+	const browser = await puppeteer.launch({
+		headless: true,
+		args: ['--no-sandbox', '--disable-setuid-sandbox'],
+	});
 	const page = await browser.newPage();
 	await page.goto(`https://www.wattpad.com/${id}`);
 	const bookid = await page.$eval(

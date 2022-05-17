@@ -36,7 +36,10 @@ const Wattpad = async ({
 }: ScrapperProps): Promise<ScrapperSuccess | ScrapperError> => {
 	let book = getBookDefaultState('W-', bookid);
 	let isBookUpdated = false;
-	const browser = await puppeteer.launch();
+	const browser = await puppeteer.launch({
+		headless: true,
+		args: ['--no-sandbox', '--disable-setuid-sandbox'],
+	});
 	const incognitoContext = await browser.createIncognitoBrowserContext();
 	let storyLastUpdated = '';
 	const page = await incognitoContext.newPage();
