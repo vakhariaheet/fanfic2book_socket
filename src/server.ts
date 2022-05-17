@@ -7,8 +7,8 @@ const io = new Server(server, {
 	cors: {
 		origin: [
 			'http://localhost:3001',
-			'https://fanfic2book.vercel.app/',
-			'https://fanfic2book.netlify.app/',
+			'https://fanfic2book.vercel.app',
+			'https://fanfic2book.netlify.app',
 		],
 	},
 });
