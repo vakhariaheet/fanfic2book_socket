@@ -367,7 +367,6 @@ export default async ({
 				};
 			}
 		}
-		await browser.close();
 
 		//-- 5. Sending the book to the cloud storage and saving the book info in the database
 		socket.emit('log', {
@@ -390,7 +389,7 @@ export default async ({
 		}
 		book = { ...bookInfo, chapters };
 	}
-
+	await browser.close();
 	//- Creating file and sending buffer to the frontend
 	if (extension === 'epub') {
 		socket.emit('log', {

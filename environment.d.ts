@@ -11,6 +11,8 @@ declare global {
 			DB_DATABASE: string;
 			DB_PORT: string;
 			ENCRYPTION_KEY: string;
+			IMAGE4IO_API_KEY: string;
+			IMAGE4IO_API_SECRET: string;
 		}
 	}
 }

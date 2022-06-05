@@ -11,6 +11,7 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
+		"@image4io/image4ionodejssdk": "^1.0.4",
 		"@sendgrid/mail": "^7.6.2",
 		"axios": "^0.26.1",
 		"canvas": "^2.9.0",
@@ -20,6 +21,7 @@
 		"epub-gen": "^0.1.0",
 		"epub-gen-memory": "^1.0.9",
 		"http": "^0.0.1-security",
+		"imgur": "^2.2.0",
 		"jszip": "^3.9.1",
 		"moment": "^2.29.2",
 		"mysql": "^2.18.1",

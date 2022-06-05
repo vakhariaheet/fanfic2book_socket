@@ -7,6 +7,7 @@ const moment = require('moment');
  *
  */
 export const getDate = (date: string, dateFormat: string = 'YYYY-MM-DD') => {
+	console.log(date);
 	date = date.toLowerCase().trim();
 	if (date.includes('today')) {
 		console.log('today');

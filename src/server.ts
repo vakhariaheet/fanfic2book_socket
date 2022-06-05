@@ -2,7 +2,9 @@ import http from 'http';
 import mysql from 'mysql2';
 import JSZip from 'jszip';
 import { Server } from 'socket.io';
+import { ImgurClient } from 'imgur';
 const server = http.createServer();
+
 const io = new Server(server, {
 	cors: {
 		origin: [
@@ -20,6 +22,12 @@ cloudinary.v2.config({
 	api_key: process.env.API_KEY,
 	api_secret: process.env.API_SECRET,
 });
+const client = new ImgurClient({
+	clientId: 'e7e5e9c1d92649a',
+	clientSecret: '8fc6cdf9c36f32a1d2d5dc4e46b92349ed0e3700',
+});
+const image = fs.readFileSync('../../1651469021312-preview.png');
+console.log('hello');
 const pool = mysql.createPool({
 	host: process.env.DB_HOST,
 	user: process.env.DB_USER,
@@ -52,6 +60,7 @@ const saveToDB = async () => {
 		console.log(`Saved ${book.filename} to database`);
 	});
 };
+
 // AO3Series('1650886').then(console.log);
 // WattpadUser('TamaraLush').then(console.log);
 // saveToDB();

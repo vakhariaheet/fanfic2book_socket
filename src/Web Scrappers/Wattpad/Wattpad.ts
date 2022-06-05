@@ -47,9 +47,11 @@ const Wattpad = async ({
 	let errorCount = 0;
 	let errorMessage = '';
 	const checkBook = async () => {
-		await page.goto(`https://wattpad.com/story/${bookid}`, {
+		page.goto(`https://wattpad.com/story/${bookid}`, {
 			waitUntil: 'domcontentloaded',
 		});
+
+		await page.evaluate(() => window.stop());
 		const is404 = await page.$('#story-404-wrapper');
 		if (is404) {
 			socket.emit('error', {
@@ -72,7 +74,7 @@ const Wattpad = async ({
 			socket.emit('log', {
 				message: 'Checking if story is updated',
 			});
-			await checkBook();
+			// await checkBook();
 			error = false;
 		} catch (err) {
 			socket.emit('log', {
@@ -127,19 +129,19 @@ const Wattpad = async ({
 		socket.emit('log', {
 			message: `Fetching ${bookid}`,
 		});
-		if (moment(info.updated).isSame(storyLastUpdated)) {
-			socket.emit('log', {
-				message: `Book is up to date`,
-			});
-		} else {
-			socket.emit('log', {
-				message: `Book is not up to date`,
-			});
-			socket.emit('log', {
-				message: `Refreshing book`,
-			});
-			isBookUpdated = true;
-		}
+		// if (moment(info.updated).isSame(storyLastUpdated)) {
+		// 	socket.emit('log', {
+		// 		message: `Book is up to date`,
+		// 	});
+		// } else {
+		// 	socket.emit('log', {
+		// 		message: `Book is not up to date`,
+		// 	});
+		// 	socket.emit('log', {
+		// 		message: `Refreshing book`,
+		// 	});
+		// 	isBookUpdated = true;
+		// }
 	}
 	if (result.length === 0 || forceUpdate || isBookUpdated) {
 		const bookInfo: BookInfo = getBookInfoDefaultState('W-', bookid);
@@ -153,8 +155,12 @@ const Wattpad = async ({
 				waitUntil: 'networkidle2',
 			});
 			//- 2. Navigating to Wattpad
-			await page.goto(`https://www.wattpad.com/story/${bookid}`);
-			await page.waitForSelector('.story-parts a');
+			page.goto(`https://www.wattpad.com/story/${bookid}`, {
+				waitUntil: 'domcontentloaded',
+			});
+
+			await page.waitFor('.story-parts a');
+			await page.evaluate(() => window.stop());
 			const isStoryPaid = await page.$('.paid-indicator');
 			if (isStoryPaid) {
 				socket.emit('error', {
@@ -168,6 +174,12 @@ const Wattpad = async ({
 				return ele.map((el: any) => [el.href, el.innerText]);
 			});
 
+			chaptersInfo = Array.from(
+				new Set(
+					chaptersInfo.map((v) => JSON.stringify(v) as any) as any,
+				) as any,
+				JSON.parse as any,
+			) as any;
 			bookInfo.title = await page.$eval(
 				'.story-info__title',
 				(ele: any) => ele.textContent,
@@ -274,9 +286,10 @@ const Wattpad = async ({
 				});
 
 				//* 4.2. Navigating to chapter
-				await newPage.goto(chapter[0]);
+				newPage.goto(chapter[0]);
 
 				await newPage.waitForSelector(`[data-page-number="1"]`);
+				await page.evaluate(() => window.stop());
 
 				//* 4.3. Scrolling to the bottom
 				await autoScroll(newPage);
@@ -347,7 +360,6 @@ const Wattpad = async ({
 		}
 
 		//- 6. Closing the browser
-		await browser.close();
 
 		//- 7. Uploading the book to cloudinary & database
 		socket.emit('log', {
@@ -370,6 +382,7 @@ const Wattpad = async ({
 		}
 		book = { ...bookInfo, chapters };
 	}
+	// await browser.close();
 	//- 8. Creating the book and returning the buffer and book info
 	socket.emit('log', {
 		message: `Creating Book`,
