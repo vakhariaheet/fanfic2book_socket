@@ -37,7 +37,7 @@ const Wattpad = async ({
 	let book = getBookDefaultState('W-', bookid);
 	let isBookUpdated = false;
 	const browser = await puppeteer.launch({
-		headless: true,
+		headless: false,
 		args: ['--no-sandbox', '--disable-setuid-sandbox'],
 	});
 	const incognitoContext = await browser.createIncognitoBrowserContext();

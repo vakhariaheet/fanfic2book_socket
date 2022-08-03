@@ -2,8 +2,20 @@ import http from 'http';
 import mysql from 'mysql2';
 import JSZip from 'jszip';
 import { Server } from 'socket.io';
-import { ImgurClient } from 'imgur';
 const server = http.createServer();
+import dotenv from 'dotenv';
+import cloudinary from 'cloudinary';
+import FanFiction from './Web Scrappers/FanFiction.NET/FanFiction';
+import { templates, SendEmail } from './Utils/SendEmail';
+import FanFictionUser from './Web Scrappers/FanFiction.NET/FanFictionUser';
+import A03 from './Web Scrappers/AO3/AO3';
+import AO3Series from './Web Scrappers/AO3/AO3Series';
+import AO3User from './Web Scrappers/AO3/AO3User';
+import Wattpad from './Web Scrappers/Wattpad/Wattpad';
+import fs from 'fs';
+import { User } from './interfaces';
+import WattpadChapter from './Web Scrappers/Wattpad/WattpadChapter';
+dotenv.config();
 
 const io = new Server(server, {
 	cors: {
@@ -14,20 +26,11 @@ const io = new Server(server, {
 		],
 	},
 });
-import dotenv from 'dotenv';
-dotenv.config();
-import cloudinary from 'cloudinary';
 cloudinary.v2.config({
 	cloud_name: process.env.CLOUD_NAME,
 	api_key: process.env.API_KEY,
 	api_secret: process.env.API_SECRET,
 });
-const client = new ImgurClient({
-	clientId: 'e7e5e9c1d92649a',
-	clientSecret: '8fc6cdf9c36f32a1d2d5dc4e46b92349ed0e3700',
-});
-const image = fs.readFileSync('../../1651469021312-preview.png');
-console.log('hello');
 const pool = mysql.createPool({
 	host: process.env.DB_HOST,
 	user: process.env.DB_USER,
@@ -35,18 +38,6 @@ const pool = mysql.createPool({
 	database: process.env.DB_DATABASE,
 });
 const db = pool.promise();
-import FanFiction from './Web Scrappers/FanFiction.NET/FanFiction';
-import { templates, SendEmail } from './Utils/SendEmail';
-import FanFictionUser from './Web Scrappers/FanFiction.NET/FanFictionUser';
-import A03 from './Web Scrappers/AO3/AO3';
-import AO3Series from './Web Scrappers/AO3/AO3Series';
-import AO3User from './Web Scrappers/AO3/AO3User';
-import Wattpad from './Web Scrappers/Wattpad/Wattpad';
-
-import { decrypt } from './Utils/Encryption';
-import fs from 'fs';
-import { User } from './interfaces';
-import WattpadChapter from './Web Scrappers/Wattpad/WattpadChapter';
 const saveToDB = async () => {
 	const books = await cloudinary.v2.search
 		.expression('resource_type:raw AND folder:bookData')
